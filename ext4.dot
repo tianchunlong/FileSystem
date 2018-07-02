@@ -1,0 +1,65 @@
+digraph ext4{
+	compound=true;
+	node [shape=box, color="skyblue", style="filled"];
+	aa [ label="mapping->a_ops->readpages" ];
+	fn [ label="q->make_request_fn" ];
+	re [ label="q->request_fn" ];
+	mq [ label="mq->issue_fn" ];
+
+
+	subgraph cluster0 {
+		label="VFS Layer";
+		bgcolor="mintcream";
+		width=10
+		vfs_read;
+	}
+
+	subgraph cluster1 {
+		label="Ext4 Layer";
+		bgcolor="mintcream";
+		do_sync_read;
+		aio_read;
+		generic_file_aio_read;
+		do_generic_file_read;
+
+		subgraph cluster2 {
+			label="Page Cache Layer";
+			bgcolor="mintcream";
+			aa;
+			ext4_readpages;
+			mpage_readpages;
+			do_mpage_readpage;
+		}
+
+		mpage_bio_submit;
+	}
+
+	subgraph cluster3 {
+		label="Generic Block Layer";
+		bgcolor="mintcream";
+		submit_bio;
+		generic_make_request;
+		fn;
+		blk_queue_bio;
+		__blk_run_queue;
+		__blk_run_queue_uncond;
+		re;
+	}
+
+	subgraph cluster4 {
+		label="Device Driver Layer";
+		bgcolor="mintcream";
+		mmc_request_fn;
+		wake_up_process;
+		mmc_queue_thread;
+		mq;
+		mmc_blk_issue_rw_rq;
+		mmc_start_req;
+		mmc_wait_for_data_req_done;
+	}
+
+	sys_read -> vfs_read -> do_sync_read -> aio_read -> generic_file_aio_read -> do_generic_file_read -> aa -> ext4_readpages -> mpage_readpages -> do_mpage_readpage -> mpage_bio_submit 
+	mpage_bio_submit -> submit_bio -> generic_make_request -> fn -> blk_queue_bio -> __blk_run_queue -> __blk_run_queue_uncond -> re -> mmc_request_fn -> wake_up_process -> mmc_queue_thread -> mq
+	mq -> mmc_blk_issue_rw_rq -> mmc_start_req -> mmc_wait_for_data_req_done;
+ }
+
